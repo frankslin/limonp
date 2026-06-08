@@ -2,123 +2,63 @@
 #define LIMONP_LOCAL_VECTOR_HPP
 
 #include <iostream>
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
+#include <vector>
 
 namespace limonp {
 using namespace std;
-/*
- * LocalVector<T> : T must be primitive type (char , int, size_t), if T is struct or class, LocalVector<T> may be dangerous..
- * LocalVector<T> is simple and not well-tested.
- */
-const size_t LOCAL_VECTOR_BUFFER_SIZE = 16;
+
 template <class T>
 class LocalVector {
  public:
-  typedef const T* const_iterator ;
+  typedef const T* const_iterator;
   typedef T value_type;
   typedef size_t size_type;
- private:
-  T buffer_[LOCAL_VECTOR_BUFFER_SIZE];
-  T * ptr_;
-  size_t size_;
-  size_t capacity_;
- public:
-  LocalVector() {
-    init_();
-  };
-  LocalVector(const LocalVector<T>& vec) {
-    init_();
-    *this = vec;
+
+  LocalVector() {}
+  LocalVector(const_iterator begin, const_iterator end) : data_(begin, end) {}
+  LocalVector(size_t size, const T& t) : data_(size, t) {}
+
+  T& operator[](size_t i) {
+    return data_[i];
   }
-  LocalVector(const_iterator  begin, const_iterator end) { // TODO: make it faster
-    init_();
-    while(begin != end) {
-      push_back(*begin++);
-    }
+  const T& operator[](size_t i) const {
+    return data_[i];
   }
-  LocalVector(size_t size, const T& t) { // TODO: make it faster
-    init_();
-    while(size--) {
-      push_back(t);
-    }
-  }
-  ~LocalVector() {
-    if(ptr_ != buffer_) {
-      free(ptr_);
-    }
-  };
- public:
-  LocalVector<T>& operator = (const LocalVector<T>& vec) {
-    clear();
-    size_ = vec.size();
-    capacity_ = vec.capacity();
-    if(vec.buffer_ == vec.ptr_) {
-      memcpy(static_cast<void*>(buffer_), vec.buffer_, sizeof(T) * size_);
-      ptr_ = buffer_;
-    } else {
-      ptr_ = (T*) malloc(vec.capacity() * sizeof(T));
-      assert(ptr_);
-      memcpy(static_cast<void*>(ptr_), vec.ptr_, vec.size() * sizeof(T));
-    }
-    return *this;
-  }
- private:
-  void init_() {
-    ptr_ = buffer_;
-    size_ = 0;
-    capacity_ = LOCAL_VECTOR_BUFFER_SIZE;
-  }
- public:
-  T& operator [] (size_t i) {
-    return ptr_[i];
-  }
-  const T& operator [] (size_t i) const {
-    return ptr_[i];
-  }
-  void push_back(const T& t) {
-    if(size_ == capacity_) {
-      assert(capacity_);
-      reserve(capacity_ * 2);
-    }
-    ptr_[size_ ++ ] = t;
+
+  void push_back(const T& value) {
+    data_.push_back(value);
   }
   void reserve(size_t size) {
-    if(size <= capacity_) {
-      return;
-    }
-    T * next =  (T*)malloc(sizeof(T) * size);
-    assert(next);
-    T * old = ptr_;
-    ptr_ = next;
-    memcpy(static_cast<void*>(ptr_), old, sizeof(T) * capacity_);
-    capacity_ = size;
-    if(old != buffer_) {
-      free(old);
-    }
+    data_.reserve(size);
   }
   bool empty() const {
-    return 0 == size();
+    return data_.empty();
   }
   size_t size() const {
-    return size_;
+    return data_.size();
   }
   size_t capacity() const {
-    return capacity_;
+    return data_.capacity();
   }
   const_iterator begin() const {
-    return ptr_;
+    return data_.data();
   }
   const_iterator end() const {
-    return ptr_ + size_;
+    return data_.data() + data_.size();
   }
   void clear() {
-    if(ptr_ != buffer_) {
-      free(ptr_);
-    }
-    init_();
+    data_.clear();
   }
+
+  bool operator==(const LocalVector<T>& rhs) const {
+    return data_ == rhs.data_;
+  }
+  bool operator!=(const LocalVector<T>& rhs) const {
+    return !(*this == rhs);
+  }
+
+ private:
+  vector<T> data_;
 };
 
 template <class T>
